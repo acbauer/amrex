@@ -4,6 +4,17 @@ set (F77SRC "")
 set (ALLHEADERS "")
 set (ALLSRC "")
 
+set(USE_CATALYST OFF CACHE BOOL "Link with Catalyst")
+if(USE_CATALYST)
+  find_package(ParaView 5.1 REQUIRED COMPONENTS vtkPVPythonCatalyst)
+  include("${PARAVIEW_USE_FILE}")
+  set(CATALYST_LIBS vtkPVPythonCatalyst vtkParallelMPI)
+  add_definitions("-DAMREX_USE_CATALYST")
+  if(NOT PARAVIEW_USE_MPI)
+    message(SEND_ERROR "ParaView must be built with MPI enabled")
+  endif()
+endif()
+
 set (CXXSRC
    AMReX_Amr.cpp AMReX_AmrLevel.cpp AMReX_AuxBoundaryData.cpp AMReX_Derive.cpp
    AMReX_Extrapolater.cpp AMReX_StateData.cpp AMReX_StateDescriptor.cpp )
