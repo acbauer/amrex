@@ -3057,66 +3057,44 @@ void AddVTKDataArrayFromPointer(Real* data, Box fabbox, vtkImageData* grid, cons
 {
   int extent[6];
   grid->GetExtent(extent);
-  if (extent[0] == fabbox.smallEnd(0) && extent[1] == fabbox.bigEnd(0)+1 &&
-      extent[2] == fabbox.smallEnd(1) && extent[3] == fabbox.bigEnd(1)+1 &&
-      extent[4] == fabbox.smallEnd(2) && extent[4] == fabbox.bigEnd(2)+1) {
-    //Real* data = mfab[mfi].dataPtr(0);
-    if (sizeof(Real) == 4) {
-      vtkNew<vtkFloatArray> vtkdata;
-      vtkdata->SetNumberOfTuples(grid->GetNumberOfCells());
-      vtkdata->SetName(name.c_str());
-      vtkdata->SetArray((float*)data, grid->GetNumberOfCells(), 1);
-      grid->GetCellData()->AddArray(vtkdata.GetPointer());
-    } else if (sizeof(Real) == 8) {
-      vtkNew<vtkDoubleArray> vtkdata;
-      vtkdata->SetNumberOfTuples(grid->GetNumberOfCells());
-      vtkdata->SetName(name.c_str());
-      vtkdata->SetArray((double*)data, grid->GetNumberOfCells(), 1);
-      grid->GetCellData()->AddArray(vtkdata.GetPointer());
-    } else {
-      amrex::Print() << "_in AMReX_Amr don't know array type\n";
-    }
-  }
-  else {
-     if (sizeof(Real) == 4) {
-      vtkNew<vtkFloatArray> vtkdata;
-      vtkdata->SetNumberOfTuples(grid->GetNumberOfCells());
-      vtkdata->SetName(name.c_str());
-      int counter = 0;
-      int istart = extent[0] - fabbox.smallEnd(0);
-      int jstart = extent[2] - fabbox.smallEnd(1);
-      int kstart = extent[4] - fabbox.smallEnd(2);
-      int ilen = fabbox.bigEnd(0) - fabbox.smallEnd(0)+1;
-      int jlen = fabbox.bigEnd(1) - fabbox.smallEnd(1)+1;
-      for (int i=0;i<extent[1]-extent[0];i++) {
-        for (int j=0;j<extent[3]-extent[2];j++) {
-          for (int k=0;k<extent[5]-extent[4];k++) {
-            vtkdata->SetTypedTuple(counter, (float*)data+istart+i+(jstart+j)*ilen+(kstart+k)*(ilen*jlen));
-            counter++;
-          }
+  if (sizeof(Real) == 4) {
+    vtkNew<vtkFloatArray> vtkdata;
+    vtkdata->SetNumberOfTuples(grid->GetNumberOfCells());
+    vtkdata->SetName(name.c_str());
+    int counter = 0;
+    int istart = extent[0] - fabbox.smallEnd(0);
+    int jstart = extent[2] - fabbox.smallEnd(1);
+    int kstart = extent[4] - fabbox.smallEnd(2);
+    int ilen = fabbox.bigEnd(0) - fabbox.smallEnd(0)+1;
+    int jlen = fabbox.bigEnd(1) - fabbox.smallEnd(1)+1;
+    for (int k=0;k<extent[5]-extent[4];k++) {
+      for (int j=0;j<extent[3]-extent[2];j++) {
+        for (int i=0;i<extent[1]-extent[0];i++) {
+          vtkdata->SetTypedTuple(counter, (float*)data+istart+i+(jstart+j)*ilen+(kstart+k)*(ilen*jlen));
+          counter++;
         }
       }
-      grid->GetCellData()->AddArray(vtkdata.GetPointer());
-    } else if (sizeof(Real) == 8) {
-      vtkNew<vtkDoubleArray> vtkdata;
-      vtkdata->SetNumberOfTuples(grid->GetNumberOfCells());
-      vtkdata->SetName(name.c_str());
-      int counter = 0;
-      int istart = extent[0] - fabbox.smallEnd(0);
-      int jstart = extent[2] - fabbox.smallEnd(1);
-      int kstart = extent[4] - fabbox.smallEnd(2);
-      int ilen = fabbox.bigEnd(0) - fabbox.smallEnd(0)+1;
-      int jlen = fabbox.bigEnd(1) - fabbox.smallEnd(1)+1;
-      for (int i=0;i<extent[1]-extent[0];i++) {
-        for (int j=0;j<extent[3]-extent[2];j++) {
-          for (int k=0;k<extent[5]-extent[4];k++) {
-            vtkdata->SetTypedTuple(counter, (double*)data+istart+i+(jstart+j)*ilen+(kstart+k)*(ilen*jlen));
-            counter++;
-          }
+    }
+    grid->GetCellData()->AddArray(vtkdata.GetPointer());
+  } else if (sizeof(Real) == 8) {
+    vtkNew<vtkDoubleArray> vtkdata;
+    vtkdata->SetNumberOfTuples(grid->GetNumberOfCells());
+    vtkdata->SetName(name.c_str());
+    int counter = 0;
+    int istart = extent[0] - fabbox.smallEnd(0);
+    int jstart = extent[2] - fabbox.smallEnd(1);
+    int kstart = extent[4] - fabbox.smallEnd(2);
+    int ilen = fabbox.bigEnd(0) - fabbox.smallEnd(0)+1;
+    int jlen = fabbox.bigEnd(1) - fabbox.smallEnd(1)+1;
+    for (int k=0;k<extent[5]-extent[4];k++) {
+      for (int j=0;j<extent[3]-extent[2];j++) {
+        for (int i=0;i<extent[1]-extent[0];i++) {
+          vtkdata->SetTypedTuple(counter, (double*)data+istart+i+(jstart+j)*ilen+(kstart+k)*(ilen*jlen));
+          counter++;
         }
       }
-      grid->GetCellData()->AddArray(vtkdata.GetPointer());
     }
+    grid->GetCellData()->AddArray(vtkdata.GetPointer());
   }
 }
 }
@@ -3183,26 +3161,24 @@ Amr::computeInSitu()
           for (int i=0;i<BL_SPACEDIM;i++) {
             spacing[i] = (probDomain.hi(i) - probDomain.lo(i)) / (domain.bigEnd(i) - domain.smallEnd(i) + 1);
           }
-          for (int g=0;g<numGrids;g++) {
-            MultiFab& mfab = amr_level[0]->get_new_data(0); // acbauer check on get_new_data(0) arg -- i think it is the current time step
-            for (MFIter mfi(mfab); mfi.isValid(); ++mfi)
-            {
-              vtkNew<vtkImageData> grid;
-              grid->SetSpacing(spacing);
-              grid->SetOrigin(globalOrigin);
-              int extent[6];
-              for (int e=0;e<3;e++) {
-                extent[2*e] = amr_level[0]->boxArray()[mfi.index()].smallEnd(e);
-                extent[2*e+1] = amr_level[0]->boxArray()[mfi.index()].bigEnd(e)+1;
-              }
-              grid->SetExtent(extent);
-              // grid->SetExtent(mfi.fabbox().smallEnd(0), mfi.fabbox().bigEnd(0)+1,
-              //                 mfi.fabbox().smallEnd(1), mfi.fabbox().bigEnd(1)+1,
-              //                 mfi.fabbox().smallEnd(2), mfi.fabbox().bigEnd(2)+1);
-              AddVTKDataArrayFromPointer(mfab[mfi].dataPtr(0), mfi.fabbox(), grid.GetPointer(), "simdata");
-              multiPiece->SetPiece(mfi.index(), grid.GetPointer());
-              //printf("vtkMultiPiece ----------- ACB on %d numgrids %d extent %d %d %d %d %d %d otherextent %d %d %d %d %d %d\n", myRank, numGrids, extent[0], extent[1], extent[2], extent[3], extent[4], extent[5], otherextent[0], otherextent[1], otherextent[2], otherextent[3], otherextent[4], otherextent[5]);
+          MultiFab& mfab = amr_level[0]->get_new_data(0); // acbauer check on get_new_data(0) arg -- i think it is the current time step
+          for (MFIter mfi(mfab); mfi.isValid(); ++mfi)
+          {
+            vtkNew<vtkImageData> grid;
+            grid->SetSpacing(spacing);
+            grid->SetOrigin(globalOrigin);
+            int extent[6];
+            for (int e=0;e<3;e++) {
+              extent[2*e] = amr_level[0]->boxArray()[mfi.index()].smallEnd(e);
+              extent[2*e+1] = amr_level[0]->boxArray()[mfi.index()].bigEnd(e)+1;
             }
+            grid->SetExtent(extent);
+            // grid->SetExtent(mfi.fabbox().smallEnd(0), mfi.fabbox().bigEnd(0)+1,
+            //                 mfi.fabbox().smallEnd(1), mfi.fabbox().bigEnd(1)+1,
+            //                 mfi.fabbox().smallEnd(2), mfi.fabbox().bigEnd(2)+1);
+            AddVTKDataArrayFromPointer(mfab[mfi].dataPtr(0), mfi.fabbox(), grid.GetPointer(), "simdata");
+            multiPiece->SetPiece(mfi.index(), grid.GetPointer());
+            //printf("vtkMultiPiece ----------- ACB on %d numgrids %d extent %d %d %d %d %d %d otherextent %d %d %d %d %d %d\n", myRank, numGrids, extent[0], extent[1], extent[2], extent[3], extent[4], extent[5], otherextent[0], otherextent[1], otherextent[2], otherextent[3], otherextent[4], otherextent[5]);
           }
         }
       } else {
