@@ -3268,7 +3268,7 @@ Amr::computeInSitu()
         inputDataDescription->SetGrid(grid.GetPointer());
       }
 
-      catalyst->CoProcess(dataDescription);
+      catalyst->CoProcess(dataDescription.GetPointer());
     }
   }
 }
